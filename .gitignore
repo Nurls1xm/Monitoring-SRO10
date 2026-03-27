@@ -1,0 +1,6 @@
+# Docker volumes / runtime data
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

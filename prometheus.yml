@@ -1,0 +1,22 @@
+# =============================================================
+# Prometheus configuration — Pull Model
+# Prometheus сам приходит к targets и забирает метрики
+# =============================================================
+
+global:
+  scrape_interval: 5s      # Опрашивать каждые 5 секунд
+  evaluation_interval: 5s
+
+scrape_configs:
+
+  # Prometheus мониторит сам себя
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Pull: Prometheus опрашивает Node Exporter
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+    # Prometheus сам инициирует HTTP GET /metrics каждые 5 секунд
+    # Node Exporter просто ждёт запроса — это и есть Pull модель

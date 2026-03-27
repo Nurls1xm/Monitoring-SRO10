@@ -1,0 +1,58 @@
+# =============================================================
+# Pull vs Push Monitoring Demo
+# Pull: Prometheus scrapes Node Exporter (pull model)
+# Push: test-metrics and batch-job push to Graphite/StatsD
+# =============================================================
+
+services:
+
+  # --- PULL MODEL ---
+
+  # Prometheus: сам опрашивает (pull) метрики с targets
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-lifecycle"
+    restart: unless-stopped
+
+  # Node Exporter: пассивно ждёт, пока Prometheus придёт за метриками
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    restart: unless-stopped
+
+  # --- PUSH MODEL ---
+
+  # Graphite + StatsD: принимает метрики, которые сервисы сами присылают (push)
+  graphite:
+    image: graphiteapp/graphite-statsd:latest
+    container_name: graphite
+    ports:
+      - "80:80"        # Graphite Web UI
+      - "2003:2003"    # Carbon plaintext (TCP push)
+      - "8125:8125/udp" # StatsD (UDP push)
+    restart: unless-stopped
+
+  # Тестовый контейнер: постоянно генерирует и пушит метрики в Graphite
+  test-metrics:
+    build: ./test-metrics
+    container_name: test-metrics
+    depends_on:
+      - graphite
+    restart: unless-stopped
+
+  # Batch job: запускается, отправляет метрики и завершается (демо push-преимущества)
+  batch-job:
+    build: ./batch-job
+    container_name: batch-job
+    depends_on:
+      - graphite
+    restart: "no"
